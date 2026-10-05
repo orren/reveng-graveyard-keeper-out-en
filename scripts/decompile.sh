@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Decompila os assemblies do estudio para C# em out/<jogo>/src-csharp/.
-# Mesma tecnica do metrics-reveng: ilspycmd, um projeto .csproj por assembly.
+# Decompiles the studio's assemblies to C# in out/<game>/src-csharp/.
+# Same technique as metrics-reveng: ilspycmd, one .csproj project per assembly.
 #
-#   ./scripts/decompila.sh gk1
-#   ./scripts/decompila.sh gk2
+#   ./scripts/decompile.sh gk1
+#   ./scripts/decompile.sh gk2
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-JOGO="${1:-gk1}"
-eval "$(./.venv/bin/python - "$JOGO" <<'PY'
+GAME="${1:-gk1}"
+eval "$(./.venv/bin/python - "$GAME" <<'PY'
 import sys
 sys.path.insert(0, "scripts")
 from gk import games
@@ -20,11 +20,11 @@ PY
 )"
 DEST="${2:-$DEST}"
 
-# ilspycmd 8.x tem alvo .NET 6 e a maquina so tem 8/10 -- mesma pegadinha do metrics-reveng.
+# ilspycmd 8.x targets .NET 6 and the machine only has 8/10 -- same gotcha as metrics-reveng.
 export DOTNET_ROLL_FORWARD=LatestMajor
 
 command -v ilspycmd >/dev/null 2>&1 || {
-  echo "ilspycmd nao encontrado. Instale com: dotnet tool install -g ilspycmd --version '8.*'" >&2
+  echo "ilspycmd not found. Install it with: dotnet tool install -g ilspycmd --version '8.*'" >&2
   exit 1
 }
 
@@ -36,4 +36,4 @@ for dll in "${ASMS[@]}"; do
 done
 
 echo
-echo "-> $DEST ($(find "$DEST" -name '*.cs' | wc -l) arquivos .cs)"
+echo "-> $DEST ($(find "$DEST" -name '*.cs' | wc -l) .cs files)"

@@ -1,1 +1,1 @@
-"""Utilitarios da extracao do Graveyard Keeper."""
+"""Graveyard Keeper extraction utilities."""

@@ -1,11 +1,11 @@
-"""TypeTree das classes do jogo, geradas a partir das DLLs Mono.
+"""TypeTrees of the game's classes, generated from the Mono DLLs.
 
-Nenhum dos dois jogos embute TypeTree nos arquivos serializados
-(`SerializedType.node is None`), entao a UnityPy nao sabe sozinha como ler um
-MonoBehaviour. O TypeTreeGeneratorAPI reconstroi a arvore lendo a
-`Assembly-CSharp.dll` -- mas emite dois detalhes diferentes do que o leitor da
-UnityPy espera. As duas correcoes estao em `tree()` e sao a chave de todo o
-pipeline; ver docs/03-pipeline-typetree.md.
+Neither game embeds a TypeTree in its serialized files
+(`SerializedType.node is None`), so UnityPy alone does not know how to read a
+MonoBehaviour. TypeTreeGeneratorAPI rebuilds the tree by reading
+`Assembly-CSharp.dll` -- but it emits two details differently from what
+UnityPy's reader expects. Both fixes are in `tree()` and are the key to the
+whole pipeline; see docs/03-typetree-pipeline.md.
 """
 from __future__ import annotations
 
@@ -31,8 +31,8 @@ def generator(game: Game) -> TypeTreeGenerator:
     if gen is None:
         if not os.path.isdir(managed_dir(game)):
             raise SystemExit(
-                f"Pasta do jogo nao encontrada: {game.env_data_dir()}\n"
-                f"Aponte {game.id.upper()}_DATA para o `*_Data` de {game.nome}."
+                f"Game folder not found: {game.env_data_dir()}\n"
+                f"Point {game.id.upper()}_DATA at the `*_Data` folder of {game.name}."
             )
         gen = TypeTreeGenerator(os.environ.get("GK_UNITY_VERSION", game.unity))
         gen.load_local_dll_folder(managed_dir(game))
@@ -41,10 +41,10 @@ def generator(game: Game) -> TypeTreeGenerator:
 
 
 def tree(game: Game, assembly: str, cls: str) -> TypeTreeNode:
-    """Arvore de tipos de `cls`, pronta para `ObjectReader.read_typetree()`.
+    """Type tree of `cls`, ready for `ObjectReader.read_typetree()`.
 
-    `cls` precisa do nome COMPLETO quando a classe esta em namespace (o
-    `LazyBearTechnology.LL` do GK2); com o nome curto o gerador falha com
+    `cls` needs the FULL name when the class is in a namespace (GK2's
+    `LazyBearTechnology.LL`); with the short name the generator fails with
     "Object reference not set to an instance of an object".
     """
     key = (game.id, assembly, cls)
@@ -64,16 +64,18 @@ def tree(game: Game, assembly: str, cls: str) -> TypeTreeNode:
     ]
 
     for i, node in enumerate(nodes):
-        # (1) A Unity alinha em 4 bytes depois de `m_Enabled`; o gerador sintetiza
-        #     o cabecalho do MonoBehaviour sem essa flag e tudo depois sai torto.
+        # (1) Unity aligns to 4 bytes after `m_Enabled`; the generator synthesizes
+        #     the MonoBehaviour header without that flag and everything after it
+        #     comes out shifted.
         if node["m_Level"] == 1 and node["m_Name"] == "m_Enabled":
             node["m_MetaFlag"] |= ALIGN_FLAG
 
-        # (2) O gerador nomeia `List<T>`/`T[]` com o tipo do ELEMENTO, e nao com
-        #     "vector". A UnityPy decide "isso e uma string?" pelo m_Type antes de
-        #     olhar os filhos, entao um `List<string>` era lido como UMA string
-        #     gigante (EOFError). Uma string de verdade tem a subarvore
-        #     Array > (int size, char data); qualquer outro no com filho Array e vetor.
+        # (2) The generator names `List<T>`/`T[]` after the ELEMENT type, not
+        #     "vector". UnityPy decides "is this a string?" by m_Type before
+        #     looking at the children, so a `List<string>` was read as ONE giant
+        #     string (EOFError). A real string has the subtree
+        #     Array > (int size, char data); any other node with an Array child is
+        #     a vector.
         has_array_child = (
             i + 3 < len(nodes)
             and nodes[i + 1]["m_Type"] == "Array"

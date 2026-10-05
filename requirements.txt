@@ -1,4 +1,4 @@
-# Leitura dos arquivos serializados da Unity
+# Reads Unity serialized files
 UnityPy==1.25.3
-# Gera TypeTree a partir das DLLs Mono (o build do jogo nao traz TypeTree)
+# Generates TypeTrees from the Mono DLLs (the game build ships none)
 TypeTreeGeneratorAPI==0.0.10
