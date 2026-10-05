@@ -2,78 +2,94 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Leia o `README.md` antes de mexer em qualquer coisa** — ele é o documento mestre
-(o que é o jogo, o pipeline, a estrutura e os achados).
+**Read `README.md` before touching anything.** It's the master document: what the game
+is, the pipeline, the structure, the GK1 field reference and the findings.
 
-## O que este projeto é
+## What this project is
 
-Extração de dados dos dois **Graveyard Keeper** (Unity + backend **Mono**) para alimentar
-a wiki em `../keeper-wiki-fnd/`. O projeto se espelha, em espírito e estrutura, no
-`~/programing/kromos-group/metrics-reveng`: scripts reprodutíveis, saída de decompilação
-versionada, documentação por assunto em `docs/`.
+Data extraction from the two **Graveyard Keeper** games (Unity + **Mono** backend). It's an
+English fork of upstream `leticiatavares1/reveng-graveyard-keeper`, which is written in
+Brazilian Portuguese and feeds the fan wiki `keeper-wiki-fnd`.
 
-Dois jogos, um pipeline: **`gk1`** (Graveyard Keeper, Unity 2020.3.17f1) e **`gk2`**
-(demo do Graveyard Keeper 2, Unity 6000.3.9f1). Todo script recebe o jogo como primeiro
-argumento e escreve em `out/<jogo>/`.
+Two games, one pipeline:
 
-Tudo em português (pt-BR), inclusive comentários de código.
+- **`gk1`**: Graveyard Keeper, Unity 2020.3.17f1.
+- **`gk2`**: demo of Graveyard Keeper 2, Unity 6000.3.9f1.
 
-## Comandos
+Every script takes the game as its first argument and writes to `out/<game>/`.
+
+**Everything is in English**: docs, code, comments, identifiers, file names, commit
+messages and the GK1 catalog. The exceptions are game data and GK2:
+
+- `out/*/data/locales/` holds the game's 11 languages, as extracted.
+- `out/gk2/` stays in upstream's Portuguese format. Don't translate it unless asked.
+
+## Commands
 
 ```sh
-./scripts/setup.sh                                  # cria .venv e instala UnityPy
-./scripts/inventario.sh        gk1|gk2              # versão do build e arquivos
-./scripts/decompila.sh         gk1|gk2              # C# -> out/<jogo>/src-csharp/
-./.venv/bin/python scripts/extrai-balance.py gk1|gk2   # -> out/<jogo>/data/balance/
-./.venv/bin/python scripts/extrai-locales.py gk1|gk2   # -> out/<jogo>/data/locales/
-./.venv/bin/python scripts/catalogo.py       gk1|gk2   # -> out/<jogo>/{data/wiki,catalogo}
-./.venv/bin/python scripts/extrai-sprites.py gk1       # -> out/<jogo>/icones/*.png
+./scripts/setup.sh                                      # creates .venv and installs UnityPy
+./scripts/inventory.sh         gk1|gk2                  # build version and files
+./scripts/decompile.sh         gk1|gk2                  # C# -> out/<game>/src-csharp/
+./.venv/bin/python scripts/extract-balance.py gk1|gk2   # -> out/<game>/data/balance/
+./.venv/bin/python scripts/extract-locales.py gk1|gk2   # -> out/<game>/data/locales/
+python3 scripts/catalog.py                    gk1|gk2   # -> out/<game>/{data/wiki,catalog*}
+./.venv/bin/python scripts/extract-sprites.py gk1       # -> out/gk1/icons/*.png
 ```
 
-`GK1_DATA` / `GK2_DATA` apontam para a pasta `*_Data` quando a instalação não é a padrão
-da Steam.
+`GK1_DATA` / `GK2_DATA` point at the `*_Data` folder when the install isn't the default
+Steam one. `catalog.py` needs neither the game nor the `.venv`: it only reads `out/`.
 
-## Regras
+## Rules
 
-- **A pasta do jogo é somente leitura.** Nenhum script escreve nela, nem em `~/.steam`.
-- **`out/data/balance/` é fiel ao binário.** Não filtre, não renomeie, não "limpe" campo
-  ali — é o baseline do `git diff` entre builds do jogo. Normalização e escolha editorial
-  acontecem depois, no `catalogo.py`, e saem em `out/data/wiki/`.
-- **Nunca procure objeto por `path_id`** — ele muda a cada build. Use o nome
+- **The game folder is read-only.** No script writes to it, nor to `~/.steam`.
+- **`out/*/data/balance/` is faithful to the binary.** Don't filter, rename or "clean" any
+  field there: it's the baseline for `git diff` between game builds. Normalization and
+  editorial choices happen later, in `catalog.py`, and land in `out/*/data/wiki/`.
+- **Never look up an object by `path_id`.** It changes with every build. Use the name
   (`gk/assets.py:monobehaviours`).
-- **Diferença entre jogos mora em `scripts/gk/games.py`.** Classe, assembly, nome do asset,
-  nomes dos campos de localização: tudo que muda entre `gk1` e `gk2` fica no registro. Se
-  você está prestes a escrever `if game.id == "gk1"` fora de `catalogo_gk1.py`, provavelmente
-  falta um campo no `Game`.
-- **Classe em namespace precisa do nome completo** no gerador de TypeTree
-  (`LazyBearTechnology.LL`, não `LL`) — senão ele falha com "Object reference not set".
-- **Nome de item não é compartilhado entre os jogos.** 37 dos 90 ids comuns têm tradução
-  pt-BR diferente no GK1 e no GK2. Nunca reuse glossário de um no outro.
-- **`ao_usar` só quer dizer "o que o item devolve" quando `pode_usar` é true.** Em
-  ferramenta o mesmo `params_on_use` guarda o custo de energia por golpe (`axe_1`:
-  `energy: -1`). Publicar isso como ganho seria errar o sinal e o sentido.
-- **Desconfie de campo que parece óbvio.** `Item.value` existe, é um int, e está errado:
-  a quantidade real de uma receita é `min_value`/`max_value` (SmartExpression). Antes de
-  publicar um número, confira contra o comportamento do jogo ou contra a wiki do fandom;
-  quando divergir, ache a razão no C# decompilado antes de decidir quem está certo.
-- **Não invente nome.** Item sem entrada na localização fica com `pt`/`en` nulos.
-- **Nem sprite.** O nome do ícone é o que `ItemDefinition.GetIcon()` monta (`icon`, ou
-  `i_<id>` quando vazio). Quatro itens em uso não têm sprite com esse nome — no jogo
-  também não têm. Some da tela, não vira substituto parecido. Os PNG não entram no git.
-- **Bancada não é `custom_icon` sozinho.** O ícone real é o de
-  `WorldGameObject.GetUniversalObjectInfo()`: para objeto de craft, é o ícone da própria
-  receita "Put" que o ergue, senão `custom_icon`, senão `"i_b_" + id`; para builder/canteiro
-  de obras, `custom_icon` senão `"i_z_" + id`. Fora do Craft, o ícone do menu de construção
-  (receita que ergue o objeto, qualquer `build_type` menos Remove) entra antes da convenção
-  de nome — sem ele o acampamento de refugiados do Game of Crone ficava sem arte. Só `custom_icon` (o que a extração fazia antes)
-  deixava a bancada de carpintaria — a mais básica do jogo — sem ícone nenhum. Ver `docs/04`.
-- Ao mexer em `scripts/gk/typetree.py`, releia `docs/03` — as duas correções ali não são
-  cosméticas: sem elas a leitura estoura ou, pior, devolve lixo plausível.
+- **Differences between the games live in `scripts/gk/games.py`.** Class, assembly, asset
+  name, localization field names, catalog folder: everything that changes between `gk1` and
+  `gk2` goes in the registry. If you're about to write `if game.id == "gk1"` outside
+  `catalog_gk1.py`, the `Game` is probably missing a field.
+- **A class in a namespace needs its full name** in the TypeTree generator
+  (`LazyBearTechnology.LL`, not `LL`). Otherwise it fails with "Object reference not set".
+- **GK1 names come only from the official English locale.** Never machine-translate game
+  text, and never fill a name from another language. An item with no English string keeps
+  `name: null` and is listed in `out/gk1/data/wiki/_missing_names.txt`.
+- **Item names aren't shared between the games.** The same id can be a different item, or
+  have a different official name, in GK1 and GK2. Never reuse one game's glossary in the
+  other.
+- **`on_use` only means "what the item gives back" when `can_be_used` is true.** On tools,
+  the same `params_on_use` holds the energy cost per swing (`axe_1`: `energy: -1`).
+  Publishing that as a gain would get both the sign and the meaning wrong.
+- **Distrust fields that look obvious.** `Item.value` exists, is an int, and is wrong: a
+  recipe's real quantity is `min_value`/`max_value` (SmartExpression). Before publishing a
+  number, check it against the game's behavior or the fandom wiki. When they disagree,
+  find the reason in the decompiled C# before deciding who's right.
+- **Don't invent sprites either.** The icon name is what `ItemDefinition.GetIcon()` builds
+  (`icon`, or `i_<id>` when empty). Four items in use have no sprite under that name, and
+  they have none in the game either. Show the blank; don't substitute a look-alike. PNGs
+  don't go into git.
+- **A workstation icon isn't just `custom_icon`.** The real icon is the one from
+  `WorldGameObject.GetUniversalObjectInfo()`:
+  - for a craft object, it's the icon of the "Put" recipe that builds it, else
+    `custom_icon`, else `"i_b_" + id`;
+  - for a builder or building site, it's `custom_icon`, else `"i_z_" + id`.
+
+  Outside Craft, the build menu icon (from the recipe that builds the object, any
+  `build_type` except Remove) comes before the naming convention. Without it, Game of
+  Crone's refugee camp had no art. Using only `custom_icon`, as the extraction once did,
+  left the carpentry workbench, the most basic one in the game, with no icon at all. See
+  `docs/04`.
+- When touching `scripts/gk/typetree.py`, re-read `docs/03`. The two fixes there aren't
+  cosmetic: without them the read blows up or, worse, returns plausible garbage.
+- **Upstream merges:** take upstream's version of `out/*/data/balance/`,
+  `out/*/data/locales/`, `out/*/src-csharp/` and `out/gk2/`. Port code and doc changes into
+  the English files by hand. Regenerate the GK1 catalog with `python3 scripts/catalog.py
+  gk1` instead of taking upstream's Portuguese output. See `README.md` §9.
 
 ## Commits
 
-Use a skill do projeto `.claude/skills/commit` para qualquer commit: Conventional Commits
-(Angular) em pt-BR, com os termos técnicos em inglês — a mesma convenção da
-`keeper-wiki-fnd`, com os escopos e as validações deste repositório. **Nunca coloque o
-Claude como coautor nem cite IA na mensagem** (sem `Co-Authored-By: Claude`, sem
-"Generated with Claude Code").
+Use the project skill `.claude/skills/commit` for every commit: Conventional Commits
+(Angular), in English. **Never list Claude as co-author or mention AI in the message** (no
+`Co-Authored-By: Claude`, no "Generated with Claude Code").
