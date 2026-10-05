@@ -1,4 +1,4 @@
-"""Acesso aos arquivos serializados da Unity dos jogos."""
+"""Access to the games' Unity serialized files."""
 from __future__ import annotations
 
 import os
@@ -10,23 +10,23 @@ import UnityPy
 from . import typetree
 from .games import Game
 
-#: Onde mora tudo que interessa: o balanceamento e os `lng_*`.
+#: Where everything that matters lives: the balance and the `lng_*`.
 RESOURCES = "resources.assets"
 
-# Cabecalho de um MonoBehaviour: m_GameObject(PPtr 12) + m_Enabled(1, alinhado a 4)
-# + m_Script(PPtr 12); o `m_Name` e a primeira string logo depois.
+# MonoBehaviour header: m_GameObject(PPtr 12) + m_Enabled(1, aligned to 4)
+# + m_Script(PPtr 12); `m_Name` is the first string right after it.
 _NAME_OFFSET = 12 + 4 + 12
 
 
 def load(game: Game, filename: str = RESOURCES):
     path = os.path.join(game.env_data_dir(), filename)
     if not os.path.isfile(path):
-        raise SystemExit(f"Arquivo nao encontrado: {path}")
+        raise SystemExit(f"File not found: {path}")
     return UnityPy.load(path)
 
 
 def raw_name(raw: bytes) -> str | None:
-    """Le o `m_Name` direto dos bytes, sem precisar de TypeTree."""
+    """Reads `m_Name` straight from the bytes, without needing a TypeTree."""
     if len(raw) < _NAME_OFFSET + 4:
         return None
     size = struct.unpack_from("<i", raw, _NAME_OFFSET)[0]
@@ -39,9 +39,9 @@ def raw_name(raw: bytes) -> str | None:
 
 
 def monobehaviours(env, predicate=None) -> Iterator[tuple[str, object]]:
-    """(nome, objeto) de cada MonoBehaviour cujo nome passa em `predicate`.
+    """(name, object) of each MonoBehaviour whose name passes `predicate`.
 
-    Sempre por NOME: o `path_id` nao e estavel entre builds.
+    Always by NAME: `path_id` is not stable across builds.
     """
     for obj in env.objects:
         if obj.type.name != "MonoBehaviour":
@@ -53,42 +53,42 @@ def monobehaviours(env, predicate=None) -> Iterator[tuple[str, object]]:
             yield name, obj
 
 
-def read_sprites(game: Game, nomes: set[str], filename: str = RESOURCES) -> Iterator[tuple[str, object]]:
-    """(nome, imagem PIL) de cada Sprite pedido, um por nome.
+def read_sprites(game: Game, names: set[str], filename: str = RESOURCES) -> Iterator[tuple[str, object]]:
+    """(name, PIL image) of each requested Sprite, one per name.
 
-    Sprite e tipo nativo da Unity: o TypeTree vem no proprio arquivo e o
-    gerador do `typetree.py` nao entra aqui. O corte por nome acontece ANTES
-    de `.image`, que e a parte cara -- sao 21.030 sprites em resources.assets
-    e a wiki usa pouco mais de mil.
+    Sprite is a native Unity type: its TypeTree ships in the file itself and
+    `typetree.py`'s generator does not come in here. The filter by name happens
+    BEFORE `.image`, which is the expensive part -- there are 21,030 sprites in
+    resources.assets and the wiki uses a little over a thousand.
 
-    Nome repetido fica com a primeira ocorrencia; o chamador compara o que
-    pediu com o que saiu para saber o que faltou.
+    A repeated name keeps its first occurrence; the caller compares what it
+    asked for with what came out to know what is missing.
     """
     env = load(game, filename)
-    vistos = set()
+    seen = set()
     for obj in env.objects:
         if obj.type.name != "Sprite":
             continue
         data = obj.read()
-        nome = getattr(data, "m_Name", "")
-        if nome not in nomes or nome in vistos:
+        name = getattr(data, "m_Name", "")
+        if name not in names or name in seen:
             continue
-        vistos.add(nome)
-        yield nome, data.image
+        seen.add(name)
+        yield name, data.image
 
 
 def read_balance(game: Game) -> dict:
-    """O ScriptableObject de balanceamento inteiro, como dict."""
+    """The whole balance ScriptableObject, as a dict."""
     env = load(game)
     for _, obj in monobehaviours(env, lambda n: n == game.balance_asset):
         return obj.read_typetree(typetree.tree(game, *game.balance_type))
     raise SystemExit(
-        f"MonoBehaviour {game.balance_asset!r} nao encontrado em {RESOURCES} de {game.nome}"
+        f"MonoBehaviour {game.balance_asset!r} not found in {RESOURCES} of {game.name}"
     )
 
 
 def read_locales(game: Game) -> Iterator[dict]:
-    """Cada localizacao, normalizada para {id, strings, aliases}."""
+    """Each localization, normalized to {id, strings, aliases}."""
     env = load(game)
     f = game.locale_fields
     for _, obj in monobehaviours(env, lambda n: n.startswith("lng_")):

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Cria o ambiente Python da extracao (.venv na raiz do projeto).
+# Creates the extraction's Python environment (.venv at the project root).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -12,5 +12,5 @@ else
 fi
 
 echo
-echo "Pronto. Use:  source .venv/bin/activate"
+echo "Done. Use:  source .venv/bin/activate"
 ./.venv/bin/python -c "import UnityPy; print('UnityPy', UnityPy.__version__)"

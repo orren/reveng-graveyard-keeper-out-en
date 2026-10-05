@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Extrai o balanceamento inteiro do jogo para JSON, uma lista por arquivo.
+"""Extracts the game's entire balance to JSON, one list per file.
 
-O balanceamento de cada Graveyard Keeper e um ScriptableObject unico
-(`Resources.Load<GameBalance>(...)`) com TODAS as listas de definicao: itens,
-receitas, objetos, tecnologias, perks, quests... A saida e fiel ao binario:
-nada e filtrado ou renomeado, para que o `git diff` entre duas versoes do jogo
-mostre exatamente o que a Lazy Bear mudou.
+Each Graveyard Keeper's balance is a single ScriptableObject
+(`Resources.Load<GameBalance>(...)`) holding ALL the definition lists: items,
+recipes, objects, technologies, perks, quests... The output is faithful to the
+binary: nothing is filtered or renamed, so that a `git diff` between two
+versions of the game shows exactly what Lazy Bear changed.
 
-    ./scripts/extrai-balance.py gk1
-    ./scripts/extrai-balance.py gk2
+    ./scripts/extract-balance.py gk1
+    ./scripts/extract-balance.py gk2
 """
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from gk import assets, games  # noqa: E402
 
 def main() -> None:
     if len(sys.argv) < 2:
-        raise SystemExit(f"uso: {sys.argv[0]} <{'|'.join(games.GAMES)}> [destino]")
+        raise SystemExit(f"usage: {sys.argv[0]} <{'|'.join(games.GAMES)}> [destination]")
     game = games.get(sys.argv[1])
     out = sys.argv[2] if len(sys.argv) > 2 else os.path.join(game.out, "data", "balance")
 
@@ -41,7 +41,7 @@ def main() -> None:
 
     with open(os.path.join(out, "_index.json"), "w", encoding="utf8") as fh:
         json.dump(index, fh, ensure_ascii=False, indent=1, sort_keys=True)
-    print(f"-> {out} ({sum(index.values())} definicoes em {len(index)} listas)")
+    print(f"-> {out} ({sum(index.values())} definitions in {len(index)} lists)")
 
 
 if __name__ == "__main__":

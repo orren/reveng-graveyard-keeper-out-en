@@ -1,11 +1,12 @@
-# ambiente
+# environment
 .venv/
 __pycache__/
 *.pyc
 
-# saída pesada / regenerável
+# heavy / regenerable output
 out/binarios/
 out/icones/
+out/*/icons/
 out/*/icones/
 out/tmp/
 *.log
