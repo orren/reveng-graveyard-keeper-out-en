@@ -110,6 +110,9 @@ def main() -> None:
     wb = Workbook()
     # Fixed timestamps keep the file byte-stable between runs.
     wb.properties.created = wb.properties.modified = datetime.datetime(2026, 1, 1)
+    # The "Used in N recipes" row is formulas saved without cached values; make
+    # every spreadsheet app compute them on open.
+    wb.calculation.fullCalcOnLoad = True
     ws = wb.active
     ws.title = "Matrix"
 
