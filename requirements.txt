@@ -2,3 +2,5 @@
 UnityPy==1.25.3
 # Generates TypeTrees from the Mono DLLs (the game build ships none)
 TypeTreeGeneratorAPI==0.0.10
+# Writes the recipe matrix spreadsheet (scripts/recipe-matrix.py)
+openpyxl==3.1.5

@@ -93,6 +93,7 @@ Every script takes the game (`gk1` or `gk2`) as its first argument.
 ./.venv/bin/python scripts/extract-balance.py gk1     # 4. balance -> out/gk1/data/balance/
 ./.venv/bin/python scripts/extract-locales.py gk1     # 5. lng_*   -> out/gk1/data/locales/
 python3 scripts/catalog.py gk1                        # 6. joins everything -> out/gk1/{data/wiki,catalog}
+python3 scripts/recipe-matrix.py                      #    spreadsheet -> out/gk1/recipe-matrix.xlsx (needs openpyxl)
 ./.venv/bin/python scripts/extract-sprites.py gk1     # 7. PNG icons -> out/gk1/icons/
 ```
 
@@ -143,6 +144,7 @@ in `scripts/gk/catalog_<game>.py`.
 | `out/gk1/data/wiki/technologies.json` | 187 technology tree nodes |
 | `out/gk1/data/wiki/_missing_names.txt` | ids left with `name: null` |
 | `out/gk1/catalog/{items,recipes,technologies}.md` | readable tables: items; recipes grouped by station; technologies in tree order |
+| `out/gk1/recipe-matrix.xlsx` | spreadsheet: one row per workstation × recipe, one column per inventory item, each cell the quantity consumed (see its Notes sheet) |
 
 **Names.** Every name and description comes from `out/gk1/data/locales/en.json`, looked
 up the way the game does it. The lookup tries, in order:
@@ -231,6 +233,7 @@ reveng-graveyard-keeper/
 │   ├── extract-balance.py <game> # balance -> one list per file
 │   ├── extract-locales.py <game> # lng_* -> id → text
 │   ├── catalog.py <game>         # joins everything; normalizes quantities and names
+│   ├── recipe-matrix.py          # GK1 workstation × recipe × item spreadsheet
 │   ├── extract-sprites.py gk1    # item/workstation/object/tech icons + HUD -> out/gk1/icons/
 │   └── gk/
 │       ├── games.py              # ← game registry: everything that differs lives here
